@@ -11,7 +11,7 @@ class Main(tk.Frame):
 
     def init_main(self):
 
-        toolbar = tk.Frame(bg='#d7d8e0', bd=2)
+        toolbar = tk.Frame(bg="#d7d8e0", bd=2)
         toolbar.pack(side=tk.TOP, fill=tk.X)
 
         btn_open_add_dialog = tk.Button(toolbar, text='Добавить книгу',command=self.open_add_dialog,
