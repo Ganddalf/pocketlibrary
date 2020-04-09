@@ -39,6 +39,10 @@ class Main(tk.Frame):
                                      compound=tk.TOP, command=self.save_as_library)
         btn_save_as_library.pack(side=tk.LEFT)
 
+        btn_load_library = tk.Button(toolbar, text='Открыть', bg='#d7d8e0', bd=0,
+                                        compound=tk.TOP, command=self.load_library)
+        btn_load_library.pack(side=tk.LEFT)
+
         self.tree = ttk.Treeview(self, columns=('ID', 'name', 'author', 'category', 'year', 'price'),
                                  height=15, show="headings")
         self.tree.column('ID', width=40, minwidth=40, anchor=tk.CENTER)
@@ -60,34 +64,7 @@ class Main(tk.Frame):
         self.view_records()
 
         root.bind('<Control-s>', lambda event: self.save_library())
-
-    def save_library(self):
-        if self.lib.file == None:
-            self.save_as_library()
-            return
-        data = self.lib.get_data()
-        file_name = self.lib.file
-        f = open(file_name, 'w')
-        f.write(data)
-        f.close()
-
-        mb.showinfo("Сообщение", "Сохранение прошло успешно")
-
-    def save_as_library(self):
-        data = self.lib.get_data()
-        file_name = fd.asksaveasfilename(filetypes=(("Library files", "*.lbf"),))
-        if not file_name:
-            return
-        if not file_name.endswith(".lbf"):
-            file_name += ".lbf"
-        print(file_name)
-        f = open(file_name, 'w')
-        f.write(data)
-        f.close()
-
-        self.lib.file = file_name
-        root.title(self.lib.file)
-        mb.showinfo("Сообщение", "Сохранение прошло успешно")
+        root.wm_protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def records(self, name, author, category, year, price):
         self.lib.add_book(name, author, category, year, price)
@@ -110,8 +87,6 @@ class Main(tk.Frame):
             del self.lib.books[index]
         self.view_records()
 
-
-
     def view_records(self):
         [self.tree.delete(i) for i in self.tree.get_children()]
         for v in self.lib.books:
@@ -126,6 +101,86 @@ class Main(tk.Frame):
             return
         UpdateBookWindow()
 
+    def save_library(self):
+        if self.lib.file == None:
+            self.save_as_library()
+            return
+        data = self.lib.get_data()
+        file_name = self.lib.file
+        f = open(file_name, 'w')
+        f.write(data)
+        f.close()
+
+        mb.showinfo("Сообщение", "Сохранение прошло успешно")
+
+    def save_as_library(self):
+        data = self.lib.get_data()
+
+        file_name = fd.asksaveasfilename(filetypes=(("Library files", "*.lbf"),))
+        if not file_name:
+            return
+        if not file_name.endswith(".lbf"):
+            file_name += ".lbf"
+        # print(file_name)
+
+        try:
+            f = open(file_name, 'w')
+            f.write(data)
+        except:
+            mb.showerror("Ошибка", "Ошибка открытия или сохранения файла")
+        finally:
+             f.close()
+
+        self.lib.file = file_name
+        root.title(self.lib.file)
+        mb.showinfo("Сообщение", "Сохранение прошло успешно")
+
+    def load_library(self, on_welcome_screen=False):
+        if not on_welcome_screen:
+            confirm = mb.askyesnocancel("Загрузка", "Сохранить текущую библиотеку?")
+            if confirm:
+                self.save_library()
+            elif confirm is None:
+                return
+
+        file_name = fd.askopenfilename(filetypes=(("Library files", "*.lbf"),))
+        if not file_name:
+            return False
+        try:
+            f = open(file_name)
+            data = f.read()
+        except:
+            mb.showerror("Ошибка", "Ошибка открытия или чтения файла")
+            return False
+        finally:
+            f.close()
+
+        new_lib = Library()
+
+        if new_lib.set_data(data):
+            new_lib.print_books()
+        else:
+            del new_lib
+            mb.showerror("Ошибка", "В файле неизвестные данные")
+            return False
+
+        prev_lib = self.lib
+        self.lib = new_lib
+        self.lib.file = file_name
+        self.view_records()
+        root.title(self.lib.file)
+        del prev_lib
+        return True
+
+    def on_closing(self):
+        confirm = mb.askyesnocancel("Выход", "Сохранить текущую библиотеку перед выходом?")
+        if confirm:
+            self.save_library()
+            root.destroy()
+        elif confirm is None:
+            return
+        else:
+            root.destroy()
 
 class Welcome(tk.Toplevel):
     def __init__(self):
@@ -157,9 +212,9 @@ class Welcome(tk.Toplevel):
         self.destroy()
 
     def open_library(self):
-        print("Opening")
-        root.deiconify()
-        self.destroy()
+        if app.load_library(True):
+            root.deiconify()
+            self.destroy()
 
     def on_closing(self):
         root.destroy()
@@ -280,10 +335,6 @@ if __name__ == "__main__":
     root = tk.Tk()
 
     lid = Library()
-    lid.add_book("Анна Каренина", "Лев Толстой", "художественная литература", 1856, 345)
-    lid.add_book("Укусь: мастерство гейш", "Гав Рыков", "учебная литература", 2018, 5)
-    lid.add_book("Как кекать", "Сычуанский Ананас", "познавательная литература", 2020, 30000)
-    # lib.print_books()
 
     app = Main(root, lid, True)
     app.pack()
