@@ -1,16 +1,20 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
+from tkinter import filedialog as fd
 from library import *
 from book import *
 
 class Main(tk.Frame):
-    def __init__(self, root, lib):
+    def __init__(self, root, lib, with_welcome_screen=False):
         super().__init__(root)
         self.lib = lib
+        if with_welcome_screen:
+            Welcome()
         self.init_main()
 
     def init_main(self):
+        root.title("Новая библиотека")
 
         toolbar = tk.Frame(bg="#d7d8e0", bd=2)
         toolbar.pack(side=tk.TOP, fill=tk.X)
@@ -26,6 +30,14 @@ class Main(tk.Frame):
         btn_delete = tk.Button(toolbar, text='Удалить книги', bg='#d7d8e0', bd=0,
                                compound=tk.TOP, command=self.delete_records)
         btn_delete.pack(side=tk.LEFT)
+
+        btn_save_library = tk.Button(toolbar, text='Сохранить', bg='#d7d8e0', bd=0,
+                               compound=tk.TOP, command=self.save_library)
+        btn_save_library.pack(side=tk.LEFT)
+
+        btn_save_as_library = tk.Button(toolbar, text='Сохранить как', bg='#d7d8e0', bd=0,
+                                     compound=tk.TOP, command=self.save_as_library)
+        btn_save_as_library.pack(side=tk.LEFT)
 
         self.tree = ttk.Treeview(self, columns=('ID', 'name', 'author', 'category', 'year', 'price'),
                                  height=15, show="headings")
@@ -47,6 +59,36 @@ class Main(tk.Frame):
 
         self.view_records()
 
+        root.bind('<Control-s>', lambda event: self.save_library())
+
+    def save_library(self):
+        if self.lib.file == None:
+            self.save_as_library()
+            return
+        data = self.lib.get_data()
+        file_name = self.lib.file
+        f = open(file_name, 'w')
+        f.write(data)
+        f.close()
+
+        mb.showinfo("Сообщение", "Сохранение прошло успешно")
+
+    def save_as_library(self):
+        data = self.lib.get_data()
+        file_name = fd.asksaveasfilename(filetypes=(("Library files", "*.lbf"),))
+        if not file_name:
+            return
+        if not file_name.endswith(".lbf"):
+            file_name += ".lbf"
+        print(file_name)
+        f = open(file_name, 'w')
+        f.write(data)
+        f.close()
+
+        self.lib.file = file_name
+        root.title(self.lib.file)
+        mb.showinfo("Сообщение", "Сохранение прошло успешно")
+
     def records(self, name, author, category, year, price):
         self.lib.add_book(name, author, category, year, price)
         self.view_records()
@@ -59,7 +101,7 @@ class Main(tk.Frame):
 
     def delete_records(self):
         if len(self.tree.selection()) == 0:
-            mb.showinfo("Сообщение", "Выберете книги для удаления")
+            mb.showinfo("Сообщение", "Выберите книги для удаления")
             return
         if not mb.askokcancel("Подтверждение", "Удалить эти книги?"):
             return
@@ -83,6 +125,45 @@ class Main(tk.Frame):
             mb.showinfo("Сообщение", "Необходимо выбрать одну книгу")
             return
         UpdateBookWindow()
+
+
+class Welcome(tk.Toplevel):
+    def __init__(self):
+        super().__init__(root)
+        self.init_welcome()
+
+    def init_welcome(self):
+        self.title("Библиотека")
+        self.geometry("400x280+400+200")
+        self.resizable(False, False)
+
+        root.withdraw()
+
+        btn_new_library = tk.Button(self, text='Новая библиотека', command=self.new_library,
+                                        bg="#d7d8e0", bd=0, compound=tk.TOP)
+        btn_new_library.pack(side=tk.LEFT)
+
+        btn_open_library = tk.Button(self, text='Открыть библиотеку', command=self.open_library,
+                                           bg="#d7d8e0", bd=0, compound=tk.TOP)
+        btn_open_library.pack(side=tk.LEFT)
+
+        self.wm_protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        self.grab_set()
+        self.focus_set()
+
+    def new_library(self):
+        root.deiconify()
+        self.destroy()
+
+    def open_library(self):
+        print("Opening")
+        root.deiconify()
+        self.destroy()
+
+    def on_closing(self):
+        root.destroy()
+
 
 class AddBookWindow(tk.Toplevel):
     def __init__(self):
@@ -132,12 +213,27 @@ class AddBookWindow(tk.Toplevel):
         self.grab_set()
         self.focus_set()
 
-    def click_OK(self, event):
-        if(not self.entry_year.get().isdigit()):
+    def is_correct_book(self):
+        if(not self.entry_name.get()):
+            mb.showinfo("Сообщение", "Введите название книги")
+            return False
+        if (not self.entry_author.get()):
+            mb.showinfo("Сообщение", "Введите автора книги")
+            return False
+        if (not self.entry_category.get()):
+            mb.showinfo("Сообщение", "Введите раздел книги")
+            return False
+        if (not self.entry_year.get().isdigit()):
             mb.showinfo("Сообщение", "Поле \"Год издания\" должно содержать число")
-            return
+            return False
         if (not self.entry_price.get().isdigit()):
             mb.showinfo("Сообщение", "Поле \"Цена\" должно содержать число")
+            return False
+
+        return True
+
+    def click_OK(self, event):
+        if not self.is_correct_book():
             return
         self.view.records(self.entry_name.get(),
                           self.entry_author.get(),
@@ -169,6 +265,9 @@ class UpdateBookWindow(AddBookWindow):
         btn_edit.bind('<Button-1>', self.click_edit)
 
     def click_edit(self, event):
+        if not self.is_correct_book():
+            return
+
         self.view.update_record(self.entry_name.get(),
                           self.entry_author.get(),
                           self.entry_category.get(),
@@ -180,18 +279,16 @@ class UpdateBookWindow(AddBookWindow):
 if __name__ == "__main__":
     root = tk.Tk()
 
-    lid = Library("wtf guys")
+    lid = Library()
     lid.add_book("Анна Каренина", "Лев Толстой", "художественная литература", 1856, 345)
     lid.add_book("Укусь: мастерство гейш", "Гав Рыков", "учебная литература", 2018, 5)
     lid.add_book("Как кекать", "Сычуанский Ананас", "познавательная литература", 2020, 30000)
     # lib.print_books()
 
-    app = Main(root, lid)
+    app = Main(root, lid, True)
     app.pack()
-    root.title("Библиотека")
     root.geometry("650x450+300+200")
     root.resizable(False, False)
-
 
 
     root.mainloop()
