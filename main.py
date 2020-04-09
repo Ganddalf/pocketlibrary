@@ -1,10 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox as mb
 from library import *
 from book import *
 
 class Main(tk.Frame):
-    def __init__(self, root):
+    def __init__(self, root, lib):
         super().__init__(root)
         self.lib = lib
         self.init_main()
@@ -21,6 +22,10 @@ class Main(tk.Frame):
         btn_open_update_dialog = tk.Button(toolbar, text='Редактировать данные', command=self.open_update_dialog,
                                         bg="#d7d8e0", bd=0, compound=tk.TOP)
         btn_open_update_dialog.pack(side=tk.LEFT)
+
+        btn_delete = tk.Button(toolbar, text='Удалить книги', bg='#d7d8e0', bd=0,
+                               compound=tk.TOP, command=self.delete_records)
+        btn_delete.pack(side=tk.LEFT)
 
         self.tree = ttk.Treeview(self, columns=('ID', 'name', 'author', 'category', 'year', 'price'),
                                  height=15, show="headings")
@@ -52,6 +57,19 @@ class Main(tk.Frame):
         book.edit(book.ID, name, author, category, year, price)
         self.view_records()
 
+    def delete_records(self):
+        if len(self.tree.selection()) == 0:
+            mb.showinfo("Сообщение", "Выберете книги для удаления")
+            return
+        if not mb.askokcancel("Подтверждение", "Удалить эти книги?"):
+            return
+        for selection_item in reversed(self.tree.selection()):
+            index = self.tree.index(selection_item)
+            del self.lib.books[index]
+        self.view_records()
+
+
+
     def view_records(self):
         [self.tree.delete(i) for i in self.tree.get_children()]
         for v in self.lib.books:
@@ -61,6 +79,9 @@ class Main(tk.Frame):
         AddBookWindow()
 
     def open_update_dialog(self):
+        if(not len(self.tree.selection()) == 1):
+            mb.showinfo("Сообщение", "Необходимо выбрать одну книгу")
+            return
         UpdateBookWindow()
 
 class AddBookWindow(tk.Toplevel):
@@ -85,15 +106,20 @@ class AddBookWindow(tk.Toplevel):
         label_price = tk.Label(self, text="Цена (руб.):")
         label_price.place(x=50, y=170)
 
-        self.entry_name = ttk.Entry(self)
+        self.text_name = tk.StringVar()
+        self.entry_name = ttk.Entry(self, textvariable=self.text_name)
         self.entry_name.place(x=200, y=50)
-        self.entry_author = ttk.Entry(self)
+        self.text_author = tk.StringVar()
+        self.entry_author = ttk.Entry(self, textvariable=self.text_author)
         self.entry_author.place(x=200, y=80)
-        self.entry_category = ttk.Entry(self)
+        self.text_category = tk.StringVar()
+        self.entry_category = ttk.Entry(self, textvariable=self.text_category)
         self.entry_category.place(x=200, y=110)
-        self.entry_year = ttk.Entry(self)
+        self.text_year = tk.StringVar()
+        self.entry_year = ttk.Entry(self, textvariable=self.text_year)
         self.entry_year.place(x=200, y=140)
-        self.entry_price = ttk.Entry(self)
+        self.text_price = tk.StringVar()
+        self.entry_price = ttk.Entry(self, textvariable=self.text_price)
         self.entry_price.place(x=200, y=170)
 
         btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
@@ -107,6 +133,12 @@ class AddBookWindow(tk.Toplevel):
         self.focus_set()
 
     def click_OK(self, event):
+        if(not self.entry_year.get().isdigit()):
+            mb.showinfo("Сообщение", "Поле \"Год издания\" должно содержать число")
+            return
+        if (not self.entry_price.get().isdigit()):
+            mb.showinfo("Сообщение", "Поле \"Цена\" должно содержать число")
+            return
         self.view.records(self.entry_name.get(),
                           self.entry_author.get(),
                           self.entry_category.get(),
@@ -122,6 +154,16 @@ class UpdateBookWindow(AddBookWindow):
 
     def init_edit(self):
         self.title("Редактировать данные")
+
+        index = self.view.tree.index(self.view.tree.selection()[0])
+        book = self.view.lib.books[index]
+
+        self.text_name.set(book.name)
+        self.text_author.set(book.author)
+        self.text_category.set(book.category)
+        self.text_year.set(book.year)
+        self.text_price.set(book.price)
+
         btn_edit = ttk.Button(self, text='Редактировать')
         btn_edit.place(x=220, y=230)
         btn_edit.bind('<Button-1>', self.click_edit)
@@ -138,13 +180,13 @@ class UpdateBookWindow(AddBookWindow):
 if __name__ == "__main__":
     root = tk.Tk()
 
-    lib = Library()
-    lib.add_book("Анна Каренина", "Лев Толстой", "художественная литература", 1856, 345)
-    lib.add_book("Укусь: мастерство гейш", "Гав Рыков", "учебная литература", 2018, 5)
-    lib.add_book("Как кекать", "Сычуанский Ананас", "познавательная литература", 2020, 30000)
-    lib.print_books()
+    lid = Library("wtf guys")
+    lid.add_book("Анна Каренина", "Лев Толстой", "художественная литература", 1856, 345)
+    lid.add_book("Укусь: мастерство гейш", "Гав Рыков", "учебная литература", 2018, 5)
+    lid.add_book("Как кекать", "Сычуанский Ананас", "познавательная литература", 2020, 30000)
+    # lib.print_books()
 
-    app = Main(root)
+    app = Main(root, lid)
     app.pack()
     root.title("Библиотека")
     root.geometry("650x450+300+200")

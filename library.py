@@ -2,9 +2,10 @@ from book import *
 
 
 class Library:
-    def __init__(self):
+    def __init__(self, file):
         self.books = []
         self.ID = 1
+        self.file = file
 
     def __len__(self):
         return len(self.books)
