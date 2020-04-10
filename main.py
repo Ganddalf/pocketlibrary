@@ -3,7 +3,7 @@ from tkinter import ttk
 from tkinter import messagebox as mb
 from tkinter import filedialog as fd
 from library import *
-from book import *
+
 
 
 class Main(tk.Frame):
@@ -13,6 +13,10 @@ class Main(tk.Frame):
         self.init_main()
 
     def init_main(self):
+        try:
+            root.iconbitmap('icons/books.ico')
+        except:
+            print('Can\'t load icon')
         root.title("Новая библиотека")
 
         toolbar = tk.Frame(bd=2)
@@ -181,7 +185,6 @@ class Main(tk.Frame):
             mb.showerror("Ошибка", "Ошибка открытия или чтения файла")
             return False
 
-
         new_lib = Library()
 
         if not new_lib.set_data(data):
@@ -216,11 +219,14 @@ class AddBookWindow(tk.Toplevel):
         super().__init__(root)
         self.init_add()
         self.view = app
-        self.iconbitmap('icons/book.ico')
+        try:
+            self.iconbitmap("icons/book.ico")
+        except:
+            print('Can\'t load icon')
 
     def init_add(self):
         self.title("Добавить книгу")
-        self.geometry("400x280+400+300")
+        self.geometry("450x280+400+300")
         self.resizable(False, False)
 
         label_name = tk.Label(self, text="Название:")
@@ -250,15 +256,18 @@ class AddBookWindow(tk.Toplevel):
         self.entry_price = ttk.Entry(self, textvariable=self.text_price, width=30)
         self.entry_price.place(x=160, y=170)
 
+        self.add_buttons()
+
+        self.grab_set()
+        self.focus_set()
+
+    def add_buttons(self):
         btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
         btn_cancel.place(x=30, y=230)
 
         self.btn_ok = ttk.Button(self, text="Добавить")
-        self.btn_ok.place(x=280, y=230)
+        self.btn_ok.place(x=320, y=230)
         self.btn_ok.bind('<Button-1>', self.click_OK)
-
-        self.grab_set()
-        self.focus_set()
 
     def is_correct_book(self):
         if (not self.entry_name.get()):
@@ -311,11 +320,13 @@ class UpdateBookWindow(AddBookWindow):
         self.text_year.set(book.year)
         self.text_price.set(book.price)
 
-        del (self.btn_ok)
-
+    def add_buttons(self):
         btn_edit = ttk.Button(self, text='Редактировать')
-        btn_edit.place(x=280, y=230)
+        btn_edit.place(x=300, y=230)
         btn_edit.bind('<Button-1>', self.click_edit)
+
+        btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
+        btn_cancel.place(x=30, y=230)
 
     def click_edit(self, event):
         if not self.is_correct_book():
@@ -346,7 +357,6 @@ if __name__ == "__main__":
     pos_y = (screen_height - height) // 2
 
     root.geometry('{}x{}+{}+{}'.format(width, height, pos_x, pos_y))
-    root.iconbitmap('icons/books.ico')
     root.resizable(False, False)
 
     root.mainloop()
