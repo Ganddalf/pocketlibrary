@@ -5,6 +5,7 @@ from tkinter import filedialog as fd
 from library import *
 from book import *
 
+
 class Main(tk.Frame):
     def __init__(self, root, lib):
         super().__init__(root)
@@ -14,43 +15,50 @@ class Main(tk.Frame):
     def init_main(self):
         root.title("Новая библиотека")
 
-        toolbar = tk.Frame(bg="#d7d8e0", bd=2)
+        toolbar = tk.Frame(bd=2)
         toolbar.pack(side=tk.TOP, fill=tk.X)
 
-        btn_open_add_dialog = tk.Button(toolbar, text='Добавить книгу',command=self.open_add_dialog,
-                                        bg="#d7d8e0", bd=0, compound=tk.TOP)
-        btn_open_add_dialog.pack(side=tk.LEFT)
+        self.new_lib_img = tk.PhotoImage(file='icons/add_folder.gif')
+        self.load_lib_img = tk.PhotoImage(file='icons/folder.gif')
+        self.save_img = tk.PhotoImage(file='icons/save.gif')
+        self.add_book_img = tk.PhotoImage(file='icons/add_book.gif')
+        self.edit_book_img = tk.PhotoImage(file='icons/edit_book.gif')
+        self.del_book_img = tk.PhotoImage(file='icons/remove_book.gif')
 
-        btn_open_update_dialog = tk.Button(toolbar, text='Редактировать данные', command=self.open_update_dialog,
-                                        bg="#d7d8e0", bd=0, compound=tk.TOP)
-        btn_open_update_dialog.pack(side=tk.LEFT)
+        btn_new_library = tk.Button(toolbar, text='Создать', bd=0, width=100,
+                                    compound=tk.TOP, command=self.new_library, image=self.new_lib_img)
+        btn_new_library.pack(side=tk.LEFT)
 
-        btn_delete = tk.Button(toolbar, text='Удалить книги', bg='#d7d8e0', bd=0,
-                               compound=tk.TOP, command=self.delete_records)
-        btn_delete.pack(side=tk.LEFT)
-
-        btn_save_library = tk.Button(toolbar, text='Сохранить', bg='#d7d8e0', bd=0,
-                               compound=tk.TOP, command=self.save_library)
-        btn_save_library.pack(side=tk.LEFT)
-
-        btn_save_as_library = tk.Button(toolbar, text='Сохранить как', bg='#d7d8e0', bd=0,
-                                     compound=tk.TOP, command=self.save_as_library)
-        btn_save_as_library.pack(side=tk.LEFT)
-
-        btn_load_library = tk.Button(toolbar, text='Открыть', bg='#d7d8e0', bd=0,
-                                        compound=tk.TOP, command=self.load_library)
+        btn_load_library = tk.Button(toolbar, text='Открыть', bd=0, width=100,
+                                     compound=tk.TOP, command=self.load_library, image=self.load_lib_img)
         btn_load_library.pack(side=tk.LEFT)
 
-        btn_new_library = tk.Button(toolbar, text='Создать', bg='#d7d8e0', bd=0,
-                                     compound=tk.TOP, command=self.new_library)
-        btn_new_library.pack(side=tk.LEFT)
+        btn_save_library = tk.Button(toolbar, text='Сохранить', bd=0, width=100,
+                                     compound=tk.TOP, command=self.save_library, image=self.save_img)
+        btn_save_library.pack(side=tk.LEFT)
+
+        btn_save_as_library = tk.Button(toolbar, text='Сохранить как', bd=0, width=100,
+                                        compound=tk.TOP, command=self.save_as_library, image=self.save_img)
+        btn_save_as_library.pack(side=tk.LEFT)
+
+        btn_open_add_dialog = tk.Button(toolbar, text='Добавить книгу', bd=0, width=100,
+                                        command=self.open_add_dialog, compound=tk.TOP, image=self.add_book_img)
+        btn_open_add_dialog.pack(side=tk.LEFT)
+
+        btn_open_update_dialog = tk.Button(toolbar, text='Редактировать', bd=0, width=100,
+                                           command=self.open_update_dialog, compound=tk.TOP, image=self.edit_book_img)
+        btn_open_update_dialog.pack(side=tk.LEFT)
+
+        btn_delete = tk.Button(toolbar, text='Удалить книги', bd=0, width=100,
+                               compound=tk.TOP, command=self.delete_records, image=self.del_book_img)
+        btn_delete.pack(side=tk.LEFT)
 
         self.tree = ttk.Treeview(self, columns=('ID', 'name', 'author', 'category', 'year', 'price'),
                                  height=20, show="headings")
         self.tree.column('ID', width=50, minwidth=50, anchor=tk.CENTER)
         self.tree.column('name', width=350, minwidth=200, anchor=tk.CENTER)
         self.tree.column('author', width=212, minwidth=200, anchor=tk.CENTER)
-        self.tree.column('category', width=245, minwidth=200, anchor=tk.W)
+        self.tree.column('category', width=245, minwidth=200, anchor=tk.CENTER)
         self.tree.column('year', width=65, minwidth=60, anchor=tk.CENTER)
         self.tree.column('price', width=100, minwidth=80, stretch=tk.NO, anchor=tk.CENTER)
 
@@ -100,7 +108,7 @@ class Main(tk.Frame):
         AddBookWindow()
 
     def open_update_dialog(self):
-        if(not len(self.tree.selection()) == 1):
+        if (not len(self.tree.selection()) == 1):
             mb.showinfo("Сообщение", "Необходимо выбрать одну книгу")
             return
         UpdateBookWindow()
@@ -123,9 +131,13 @@ class Main(tk.Frame):
             return
         data = self.lib.get_data()
         file_name = self.lib.file
-        f = open(file_name, 'w', encoding='utf-8')
-        f.write(data)
-        f.close()
+
+        try:
+            with open(file_name, 'w', encoding='utf-8') as f:
+                f.write(data)
+        except:
+            mb.showerror("Ошибка", "Ошибка открытия или сохранения файла")
+
         self.lib.changed = False
 
         mb.showinfo("Сообщение", "Сохранение прошло успешно")
@@ -140,12 +152,10 @@ class Main(tk.Frame):
             file_name += ".lbf"
 
         try:
-            f = open(file_name, 'w', encoding='utf-8')
-            f.write(data)
+            with open(file_name, 'w', encoding='utf-8') as f:
+                f.write(data)
         except:
             mb.showerror("Ошибка", "Ошибка открытия или сохранения файла")
-        finally:
-             f.close()
 
         self.lib.file = file_name
         root.title(self.lib.file.split('\\')[-1].split('/')[-1])
@@ -165,13 +175,12 @@ class Main(tk.Frame):
         if not file_name:
             return False
         try:
-            f = open(file_name, encoding='utf-8')
-            data = f.read()
+            with open(file_name, encoding='utf-8') as f:
+                data = f.read()
         except:
             mb.showerror("Ошибка", "Ошибка открытия или чтения файла")
             return False
-        finally:
-            f.close()
+
 
         new_lib = Library()
 
@@ -201,11 +210,13 @@ class Main(tk.Frame):
         else:
             root.destroy()
 
+
 class AddBookWindow(tk.Toplevel):
     def __init__(self):
         super().__init__(root)
         self.init_add()
         self.view = app
+        self.iconbitmap('icons/book.ico')
 
     def init_add(self):
         self.title("Добавить книгу")
@@ -224,33 +235,33 @@ class AddBookWindow(tk.Toplevel):
         label_price.place(x=50, y=170)
 
         self.text_name = tk.StringVar()
-        self.entry_name = ttk.Entry(self, textvariable=self.text_name)
-        self.entry_name.place(x=200, y=50)
+        self.entry_name = ttk.Entry(self, textvariable=self.text_name, width=30)
+        self.entry_name.place(x=160, y=50)
         self.text_author = tk.StringVar()
-        self.entry_author = ttk.Entry(self, textvariable=self.text_author)
-        self.entry_author.place(x=200, y=80)
+        self.entry_author = ttk.Entry(self, textvariable=self.text_author, width=30)
+        self.entry_author.place(x=160, y=80)
         self.text_category = tk.StringVar()
-        self.entry_category = ttk.Entry(self, textvariable=self.text_category)
-        self.entry_category.place(x=200, y=110)
+        self.entry_category = ttk.Entry(self, textvariable=self.text_category, width=30)
+        self.entry_category.place(x=160, y=110)
         self.text_year = tk.StringVar()
-        self.entry_year = ttk.Entry(self, textvariable=self.text_year)
-        self.entry_year.place(x=200, y=140)
+        self.entry_year = ttk.Entry(self, textvariable=self.text_year, width=30)
+        self.entry_year.place(x=160, y=140)
         self.text_price = tk.StringVar()
-        self.entry_price = ttk.Entry(self, textvariable=self.text_price)
-        self.entry_price.place(x=200, y=170)
+        self.entry_price = ttk.Entry(self, textvariable=self.text_price, width=30)
+        self.entry_price.place(x=160, y=170)
 
         btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
-        btn_cancel.place(x=300, y=230)
+        btn_cancel.place(x=30, y=230)
 
-        btn_ok = ttk.Button(self, text="Добавить")
-        btn_ok.place(x=220, y=230)
-        btn_ok.bind('<Button-1>', self.click_OK)
+        self.btn_ok = ttk.Button(self, text="Добавить")
+        self.btn_ok.place(x=280, y=230)
+        self.btn_ok.bind('<Button-1>', self.click_OK)
 
         self.grab_set()
         self.focus_set()
 
     def is_correct_book(self):
-        if(not self.entry_name.get()):
+        if (not self.entry_name.get()):
             mb.showinfo("Сообщение", "Введите название книги")
             return False
         if (not self.entry_author.get()):
@@ -271,12 +282,16 @@ class AddBookWindow(tk.Toplevel):
     def click_OK(self, event):
         if not self.is_correct_book():
             return
+
+        self.view.lib.changed = True
+
         self.view.records(self.entry_name.get(),
                           self.entry_author.get(),
                           self.entry_category.get(),
                           self.entry_year.get(),
                           self.entry_price.get())
         self.destroy()
+
 
 class UpdateBookWindow(AddBookWindow):
     def __init__(self):
@@ -296,19 +311,23 @@ class UpdateBookWindow(AddBookWindow):
         self.text_year.set(book.year)
         self.text_price.set(book.price)
 
+        del (self.btn_ok)
+
         btn_edit = ttk.Button(self, text='Редактировать')
-        btn_edit.place(x=220, y=230)
+        btn_edit.place(x=280, y=230)
         btn_edit.bind('<Button-1>', self.click_edit)
 
     def click_edit(self, event):
         if not self.is_correct_book():
             return
 
+        self.view.lib.changed = True
+
         self.view.update_record(self.entry_name.get(),
-                          self.entry_author.get(),
-                          self.entry_category.get(),
-                          self.entry_year.get(),
-                          self.entry_price.get())
+                                self.entry_author.get(),
+                                self.entry_category.get(),
+                                self.entry_year.get(),
+                                self.entry_price.get())
         self.destroy()
 
 
@@ -327,6 +346,7 @@ if __name__ == "__main__":
     pos_y = (screen_height - height) // 2
 
     root.geometry('{}x{}+{}+{}'.format(width, height, pos_x, pos_y))
+    root.iconbitmap('icons/books.ico')
     root.resizable(False, False)
 
     root.mainloop()
