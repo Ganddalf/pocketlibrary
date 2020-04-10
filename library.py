@@ -1,3 +1,4 @@
+# coding: utf8
 from book import *
 from operator import attrgetter
 

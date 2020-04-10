@@ -1,3 +1,5 @@
+# coding: utf8
+
 
 class Book:
     def __init__(self, id, name, author, category, year, price):
