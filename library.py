@@ -6,6 +6,7 @@ class Library:
         self.books = []
         self.ID = 1
         self.file = None
+        self.changed = False
 
     def __len__(self):
         return len(self.books)
@@ -32,6 +33,7 @@ class Library:
         self.ID = 1
         self.file = None
         self.books.clear()
+        self.changed = False
 
     def set_data(self, data):
         try:

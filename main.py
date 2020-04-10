@@ -6,11 +6,9 @@ from library import *
 from book import *
 
 class Main(tk.Frame):
-    def __init__(self, root, lib, with_welcome_screen=False):
+    def __init__(self, root, lib):
         super().__init__(root)
         self.lib = lib
-        if with_welcome_screen:
-            Welcome()
         self.init_main()
 
     def init_main(self):
@@ -43,14 +41,18 @@ class Main(tk.Frame):
                                         compound=tk.TOP, command=self.load_library)
         btn_load_library.pack(side=tk.LEFT)
 
+        btn_new_library = tk.Button(toolbar, text='Создать', bg='#d7d8e0', bd=0,
+                                     compound=tk.TOP, command=self.new_library)
+        btn_new_library.pack(side=tk.LEFT)
+
         self.tree = ttk.Treeview(self, columns=('ID', 'name', 'author', 'category', 'year', 'price'),
-                                 height=15, show="headings")
-        self.tree.column('ID', width=40, minwidth=40, anchor=tk.CENTER)
-        self.tree.column('name', width=200, minwidth=150, anchor=tk.CENTER)
-        self.tree.column('author', width=130, minwidth=90, anchor=tk.CENTER)
-        self.tree.column('category', width=178, minwidth=100, anchor=tk.W)
-        self.tree.column('year', width=50, minwidth=50, anchor=tk.CENTER)
-        self.tree.column('price', width=50, minwidth=50, stretch=tk.NO, anchor=tk.CENTER)
+                                 height=20, show="headings")
+        self.tree.column('ID', width=50, minwidth=50, anchor=tk.CENTER)
+        self.tree.column('name', width=350, minwidth=200, anchor=tk.CENTER)
+        self.tree.column('author', width=212, minwidth=200, anchor=tk.CENTER)
+        self.tree.column('category', width=245, minwidth=200, anchor=tk.W)
+        self.tree.column('year', width=65, minwidth=60, anchor=tk.CENTER)
+        self.tree.column('price', width=100, minwidth=80, stretch=tk.NO, anchor=tk.CENTER)
 
         self.tree.heading('ID', text='ID')
         self.tree.heading('name', text='Название')
@@ -75,6 +77,7 @@ class Main(tk.Frame):
         book = self.lib.books[index]
         book.edit(book.ID, name, author, category, year, price)
         self.view_records()
+        self.lib.changed = True
 
     def delete_records(self):
         if len(self.tree.selection()) == 0:
@@ -85,6 +88,7 @@ class Main(tk.Frame):
         for selection_item in reversed(self.tree.selection()):
             index = self.tree.index(selection_item)
             del self.lib.books[index]
+        self.lib.changed = True
         self.view_records()
 
     def view_records(self):
@@ -101,15 +105,28 @@ class Main(tk.Frame):
             return
         UpdateBookWindow()
 
+    def new_library(self):
+        if self.lib.changed:
+            confirm = mb.askyesnocancel("Создать", "Сохранить текущую библиотеку?")
+            if confirm:
+                self.save_library()
+            elif confirm is None:
+                return
+
+        self.lib.clear()
+        root.title("Новая библиотека")
+        self.view_records()
+
     def save_library(self):
         if self.lib.file == None:
             self.save_as_library()
             return
         data = self.lib.get_data()
         file_name = self.lib.file
-        f = open(file_name, 'w')
+        f = open(file_name, 'w', encoding='utf-8')
         f.write(data)
         f.close()
+        self.lib.changed = False
 
         mb.showinfo("Сообщение", "Сохранение прошло успешно")
 
@@ -121,10 +138,9 @@ class Main(tk.Frame):
             return
         if not file_name.endswith(".lbf"):
             file_name += ".lbf"
-        # print(file_name)
 
         try:
-            f = open(file_name, 'w')
+            f = open(file_name, 'w', encoding='utf-8')
             f.write(data)
         except:
             mb.showerror("Ошибка", "Ошибка открытия или сохранения файла")
@@ -132,11 +148,13 @@ class Main(tk.Frame):
              f.close()
 
         self.lib.file = file_name
-        root.title(self.lib.file)
+        root.title(self.lib.file.split('\\')[-1].split('/')[-1])
+        self.lib.changed = False
+
         mb.showinfo("Сообщение", "Сохранение прошло успешно")
 
-    def load_library(self, on_welcome_screen=False):
-        if not on_welcome_screen:
+    def load_library(self):
+        if self.lib.changed:
             confirm = mb.askyesnocancel("Загрузка", "Сохранить текущую библиотеку?")
             if confirm:
                 self.save_library()
@@ -147,7 +165,7 @@ class Main(tk.Frame):
         if not file_name:
             return False
         try:
-            f = open(file_name)
+            f = open(file_name, encoding='utf-8')
             data = f.read()
         except:
             mb.showerror("Ошибка", "Ошибка открытия или чтения файла")
@@ -157,9 +175,7 @@ class Main(tk.Frame):
 
         new_lib = Library()
 
-        if new_lib.set_data(data):
-            new_lib.print_books()
-        else:
+        if not new_lib.set_data(data):
             del new_lib
             mb.showerror("Ошибка", "В файле неизвестные данные")
             return False
@@ -168,57 +184,22 @@ class Main(tk.Frame):
         self.lib = new_lib
         self.lib.file = file_name
         self.view_records()
-        root.title(self.lib.file)
+        root.title(self.lib.file.split('\\')[-1].split('/')[-1])
         del prev_lib
         return True
 
     def on_closing(self):
-        confirm = mb.askyesnocancel("Выход", "Сохранить текущую библиотеку перед выходом?")
-        if confirm:
-            self.save_library()
-            root.destroy()
-        elif confirm is None:
-            return
+        if self.lib.changed:
+            confirm = mb.askyesnocancel("Выход", "Сохранить текущую библиотеку перед выходом?")
+            if confirm:
+                self.save_library()
+                root.destroy()
+            elif confirm is None:
+                return
+            else:
+                root.destroy()
         else:
             root.destroy()
-
-class Welcome(tk.Toplevel):
-    def __init__(self):
-        super().__init__(root)
-        self.init_welcome()
-
-    def init_welcome(self):
-        self.title("Библиотека")
-        self.geometry("400x280+400+200")
-        self.resizable(False, False)
-
-        root.withdraw()
-
-        btn_new_library = tk.Button(self, text='Новая библиотека', command=self.new_library,
-                                        bg="#d7d8e0", bd=0, compound=tk.TOP)
-        btn_new_library.pack(side=tk.LEFT)
-
-        btn_open_library = tk.Button(self, text='Открыть библиотеку', command=self.open_library,
-                                           bg="#d7d8e0", bd=0, compound=tk.TOP)
-        btn_open_library.pack(side=tk.LEFT)
-
-        self.wm_protocol("WM_DELETE_WINDOW", self.on_closing)
-
-        self.grab_set()
-        self.focus_set()
-
-    def new_library(self):
-        root.deiconify()
-        self.destroy()
-
-    def open_library(self):
-        if app.load_library(True):
-            root.deiconify()
-            self.destroy()
-
-    def on_closing(self):
-        root.destroy()
-
 
 class AddBookWindow(tk.Toplevel):
     def __init__(self):
@@ -336,10 +317,16 @@ if __name__ == "__main__":
 
     lid = Library()
 
-    app = Main(root, lid, True)
+    app = Main(root, lid)
     app.pack()
-    root.geometry("650x450+300+200")
-    root.resizable(False, False)
+    width = 1024
+    height = 512
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    pos_x = (screen_width - width) // 2
+    pos_y = (screen_height - height) // 2
 
+    root.geometry('{}x{}+{}+{}'.format(width, height, pos_x, pos_y))
+    root.resizable(False, False)
 
     root.mainloop()
