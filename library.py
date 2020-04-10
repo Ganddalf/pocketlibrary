@@ -1,4 +1,5 @@
 from book import *
+from operator import attrgetter
 
 
 class Library:
@@ -12,11 +13,11 @@ class Library:
         return len(self.books)
 
     def add_book(self, name, author, category, year, price):
-        self.books.append( Book(self.ID, name, author, category, year, price) )
+        self.books.append(Book(self.ID, name, author, category, year, price))
         self.ID += 1
 
-    def load_book(self, ID, name, author, category, year, price):
-        self.books.append(Book(ID, name, author, category, year, price))
+    def load_book(self, id, name, author, category, year, price):
+        self.books.append(Book(id, name, author, category, year, price))
 
     def print_books(self):
         print("There are your books:")
@@ -25,6 +26,7 @@ class Library:
 
     def get_data(self):
         data = ""
+        self.books.sort(key=attrgetter("ID"), reverse=False)
         for book in self.books:
             data += str(book) + "\n"
         return data
@@ -50,6 +52,9 @@ class Library:
 
         return True
 
-
-
-
+    def sort_by_attribute(self, attr):
+        if self.books == sorted(self.books, key=attrgetter(attr),
+                                reverse=False):
+            self.books.sort(key=attrgetter(attr), reverse=True)
+        else:
+            self.books.sort(key=attrgetter(attr), reverse=False)

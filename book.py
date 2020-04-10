@@ -1,18 +1,32 @@
 
 class Book:
-    def __init__(self, *args):
-        self.ID, self.name, self.author, self.category, self.year, self.price = (args)
+    def __init__(self, id, name, author, category, year, price):
+        self.ID = int(id)
+        self.name = name
+        self.author = author
+        self.category = category
+        self.year = int(year)
+        self.price = int(price)
 
     def __str__(self):
-        return ' | '.join([str(x) for x in [self.ID, self.name, self.author, self.category, self.year, self.price]])
+        return ' | '.join([str(x) for x in [self.ID, self.name,
+                                            self.author, self.category,
+                                            self.year, self.price]])
 
-    def edit(self, *args):
-        self.ID, self.name, self.author, self.category, self.year, self.price = (args)
+    def edit(self, id, name, author, category, year, price):
+        self.ID = int(id)
+        self.name = name
+        self.author = author
+        self.category = category
+        self.year = int(year)
+        self.price = int(price)
 
     def get(self):
-        return (self.ID, self.name, self.author, self.category, self.year, self.changed_price(self.price))
+        return self.ID, self.name, self.author, self.category,\
+               self.year, self.changed_price(self.price)
 
-    def changed_price(self, price):
+    @staticmethod
+    def changed_price(price):
         price = list(str(price))
         i = 0
         temp_price = ""
