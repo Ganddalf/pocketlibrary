@@ -3,6 +3,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from tkinter import filedialog as fd
+import hashlib
+import qrcode
 from library import Library
 
 
@@ -28,12 +30,13 @@ class Main(tk.Frame):
         self.images = list(map(lambda x: tk.PhotoImage(file=x), image_files))
 
         buttons_data = [['Создать', self.new_library, self.images[0]],
-                           ['Открыть', self.load_library, self.images[1]],
-                           ['Сохранить', self.save_library, self.images[2]],
-                           ['Сохранить как', self.save_as_library, self.images[2]],
-                           ['Добавить книгу', self.open_add_dialog, self.images[3]],
-                           ['Редактировать', self.open_update_dialog, self.images[4]],
-                           ['Удалить книги', self.delete_records, self.images[5]]]
+                        ['Открыть', self.load_library, self.images[1]],
+                        ['Сохранить', self.save_library, self.images[2]],
+                        ['Сохранить как', self.save_as_library, self.images[2]],
+                        ['Добавить книгу', self.open_add_dialog, self.images[3]],
+                        ['Редактировать', self.open_update_dialog, self.images[4]],
+                        ['Удалить книги', self.delete_records, self.images[5]],
+                        ['Сохранить QR-код', self.save_qrcode, self.images[2]]]
 
         def new_button(btn):
             return tk.Button(toolbar, text=btn[0], bd=0, width=100,
@@ -162,6 +165,33 @@ class Main(tk.Frame):
         self.lib.changed = False
 
         mb.showinfo("Сообщение", "Сохранение прошло успешно")
+
+    def save_qrcode(self):
+        if not len(self.tree.selection()) == 1:
+            mb.showinfo("Сообщение", "Необходимо выбрать одну книгу")
+            return
+
+        file_name = fd.asksaveasfilename(filetypes=(("PNG image",
+                                                     "*.png"),))
+        if not file_name:
+            return
+        if not file_name.endswith(".png"):
+            file_name += ".png"
+
+        index = self.tree.index(self.tree.selection()[0])
+        book = self.lib.books[index]
+
+        hash_code = hashlib.md5(str(book).encode()).hexdigest()
+
+        img = qrcode.make(hash_code)
+
+        try:
+            img.save(file_name)
+        except:
+            mb.showerror("Ошибка", "Ошибка сохранения файла")
+
+        mb.showinfo("Сообщение", "Сохранение прошло успешно")
+
 
     def load_library(self):
         if self.lib.changed:
