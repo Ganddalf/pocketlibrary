@@ -1,5 +1,5 @@
 # coding: utf8
-from book import *
+from book import Book
 from operator import attrgetter
 
 
@@ -44,8 +44,7 @@ class Library:
             data.pop()
             data = [str.split(' | ') for str in data]
             for book_data in data:
-                self.load_book(book_data[0], book_data[1], book_data[2],
-                               book_data[3], book_data[4], book_data[5])
+                self.load_book(*book_data)
                 self.ID = int(self.books[-1].ID) + 1
         except:
             self.clear()
@@ -56,6 +55,6 @@ class Library:
     def sort_by_attribute(self, attr):
         if self.books == sorted(self.books, key=attrgetter(attr),
                                 reverse=False):
-            self.books.sort(key=attrgetter(attr), reverse=True)
+            self.books = list(reversed(self.books))
         else:
             self.books.sort(key=attrgetter(attr), reverse=False)
