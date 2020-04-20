@@ -36,10 +36,14 @@ class Main(tk.Frame):
         buttons_data = [['Создать', self.new_library, self.images[0]],
                         ['Открыть', self.load_library, self.images[1]],
                         ['Сохранить', self.save_library, self.images[2]],
-                        ['Сохранить как', self.save_as_library, self.images[2]],
-                        ['Добавить книгу', self.open_add_dialog, self.images[3]],
-                        ['Редактировать', self.open_update_dialog, self.images[4]],
-                        ['Удалить книги', self.delete_records, self.images[5]],
+                        ['Сохранить как', self.save_as_library,
+                         self.images[2]],
+                        ['Добавить книгу', self.open_add_dialog,
+                         self.images[3]],
+                        ['Редактировать', self.open_update_dialog,
+                         self.images[4]],
+                        ['Удалить книги', self.delete_records,
+                         self.images[5]],
                         ['Сохранить код', self.save_qrcode, self.images[7]],
                         ['Прикрепить файл', self.attach_file, self.images[6]]]
 
@@ -100,10 +104,8 @@ class Main(tk.Frame):
         elif sys.platform.startswith('linux'):
             subprocess.call(["xdg-open", book.path])
 
-
-
-    def click_on_heading(self, str):
-        self.lib.sort_by_attribute(str)
+    def click_on_heading(self, heading):
+        self.lib.sort_by_attribute(heading)
         self.view_records()
 
     def records(self, name, author, category, year, price):
@@ -242,7 +244,8 @@ class Main(tk.Frame):
             elif confirm is None:
                 return
 
-        file_name = fd.askopenfilename(filetypes=(("Library files", "*.lbf"),))
+        file_name = fd.askopenfilename(filetypes=(("Library files",
+                                                   "*.lbf"),))
         if not file_name:
             return False
         try:

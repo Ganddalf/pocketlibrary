@@ -14,7 +14,8 @@ class Library:
         return len(self.books)
 
     def add_book(self, name, author, category, year, price):
-        self.books.append(Book(self.ID, name, author, category, year, price, ""))
+        self.books.append(Book(self.ID, name, author,
+                               category, year, price, ""))
         self.ID += 1
 
     def load_book(self, id, name, author, category, year, price, file):

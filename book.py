@@ -16,11 +16,11 @@ class Book:
             self.is_path_exist = True
             self.path = file
 
-
     def __str__(self):
         return ' | '.join([str(x) for x in [self.ID, self.name,
                                             self.author, self.category,
-                                            self.year, self.price, self.path]])
+                                            self.year, self.price,
+                                            self.path]])
 
     def edit(self, id, name, author, category, year, price):
         self.ID = int(id)
@@ -39,7 +39,7 @@ class Book:
             file_status = "Есть"
         else:
             file_status = "-"
-        return self.ID, self.name, self.author, self.category,\
+        return self.ID, self.name, self.author, self.category, \
                self.year, self.changed_price(self.price), file_status
 
     @staticmethod
