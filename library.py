@@ -14,11 +14,11 @@ class Library:
         return len(self.books)
 
     def add_book(self, name, author, category, year, price):
-        self.books.append(Book(self.ID, name, author, category, year, price))
+        self.books.append(Book(self.ID, name, author, category, year, price, ""))
         self.ID += 1
 
-    def load_book(self, id, name, author, category, year, price):
-        self.books.append(Book(id, name, author, category, year, price))
+    def load_book(self, id, name, author, category, year, price, file):
+        self.books.append(Book(id, name, author, category, year, price, file))
 
     def print_books(self):
         print("There are your books:")
@@ -53,6 +53,8 @@ class Library:
         return True
 
     def sort_by_attribute(self, attr):
+        if attr == "file":
+            attr = "is_path_exist"
         if self.books == sorted(self.books, key=attrgetter(attr),
                                 reverse=False):
             self.books = list(reversed(self.books))

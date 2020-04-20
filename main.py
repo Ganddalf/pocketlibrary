@@ -3,6 +3,9 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from tkinter import filedialog as fd
+import sys
+import os
+import subprocess
 import hashlib
 import qrcode
 from library import Library
@@ -26,7 +29,8 @@ class Main(tk.Frame):
 
         image_files = ['icons/add_folder.gif', 'icons/folder.gif',
                        'icons/save.gif', 'icons/add_book.gif',
-                       'icons/edit_book.gif', 'icons/remove_book.gif']
+                       'icons/edit_book.gif', 'icons/remove_book.gif',
+                       'icons/add_page.gif', 'icons/qr.gif']
         self.images = list(map(lambda x: tk.PhotoImage(file=x), image_files))
 
         buttons_data = [['Создать', self.new_library, self.images[0]],
@@ -36,7 +40,8 @@ class Main(tk.Frame):
                         ['Добавить книгу', self.open_add_dialog, self.images[3]],
                         ['Редактировать', self.open_update_dialog, self.images[4]],
                         ['Удалить книги', self.delete_records, self.images[5]],
-                        ['Сохранить QR-код', self.save_qrcode, self.images[2]]]
+                        ['Сохранить код', self.save_qrcode, self.images[7]],
+                        ['Прикрепить файл', self.attach_file, self.images[6]]]
 
         def new_button(btn):
             return tk.Button(toolbar, text=btn[0], bd=0, width=100,
@@ -47,14 +52,16 @@ class Main(tk.Frame):
             button.pack(side=tk.LEFT)
 
         self.tree = ttk.Treeview(self, columns=('ID', 'name', 'author',
-                                                'category', 'year', 'price'),
-                                 height=20, show="headings")
+                                                'category', 'year',
+                                                'price', 'file'),
+                                 height=25, show="headings")
         columns_data = [['ID', 'ID', 50, 50, tk.CENTER],
-                        ['name', 'Название', 350, 200, tk.CENTER],
-                        ['author', 'Автор', 212, 200, tk.CENTER],
-                        ['category', 'Раздел', 245, 200, tk.CENTER],
-                        ['year', 'Год', 65, 60, tk.CENTER],
-                        ['price', 'Цена', 100, 80, tk.CENTER]]
+                        ['name', 'Название', 350, 250, tk.CENTER],
+                        ['author', 'Автор', 250, 200, tk.CENTER],
+                        ['category', 'Раздел', 250, 200, tk.CENTER],
+                        ['year', 'Год', 100, 70, tk.CENTER],
+                        ['price', 'Цена', 100, 80, tk.CENTER],
+                        ['file', 'Файл', 98, 70, tk.CENTER]]
 
         def set_column(data):
             self.tree.column(data[0], width=data[2], minwidth=data[3],
@@ -66,11 +73,34 @@ class Main(tk.Frame):
         self.tree.column('price', stretch=tk.NO)
 
         self.tree.pack()
+        self.tree.bind('<Double-Button-1>', self.on_select)
 
         self.view_records()
 
         root.bind('<Control-s>', lambda event: self.save_library())
         root.wm_protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def on_select(self, event):
+        if len(self.tree.selection()) == 0:
+            return
+        elif not len(self.tree.selection()) == 1:
+            mb.showinfo("Сообщение", "Необходимо выбрать одну книгу")
+            return
+        book = self.get_selected_book()
+        if not book.is_path_exist:
+            mb.showinfo("Сообщение", "Файл книги не прикреплен")
+            return
+
+        if not os.path.isfile(book.path):
+            mb.showinfo("Сообщение", "Файл не существует\nПрикрепите другой")
+            return
+
+        if sys.platform.startswith('win'):
+            os.startfile(book.path)
+        elif sys.platform.startswith('linux'):
+            subprocess.call(["xdg-open", book.path])
+
+
 
     def click_on_heading(self, str):
         self.lib.sort_by_attribute(str)
@@ -81,8 +111,7 @@ class Main(tk.Frame):
         self.view_records()
 
     def update_record(self, name, author, category, year, price):
-        index = self.tree.index(self.tree.selection()[0])
-        book = self.lib.books[index]
+        book = self.get_selected_book()
         book.edit(book.ID, name, author, category, year, price)
         self.view_records()
         self.lib.changed = True
@@ -104,13 +133,22 @@ class Main(tk.Frame):
         for v in self.lib.books:
             self.tree.insert('', 'end', values=v.get())
 
+    def select_one_book_check(self):
+        if not len(self.tree.selection()) == 1:
+            mb.showinfo("Сообщение", "Необходимо выбрать одну книгу")
+            return False
+        return True
+
+    def get_selected_book(self):
+        index = self.tree.index(self.tree.selection()[0])
+        return self.lib.books[index]
+
     @staticmethod
     def open_add_dialog():
         AddBookWindow()
 
     def open_update_dialog(self):
-        if not len(self.tree.selection()) == 1:
-            mb.showinfo("Сообщение", "Необходимо выбрать одну книгу")
+        if not self.select_one_book_check():
             return
         UpdateBookWindow()
 
@@ -167,8 +205,7 @@ class Main(tk.Frame):
         mb.showinfo("Сообщение", "Сохранение прошло успешно")
 
     def save_qrcode(self):
-        if not len(self.tree.selection()) == 1:
-            mb.showinfo("Сообщение", "Необходимо выбрать одну книгу")
+        if not self.select_one_book_check():
             return
 
         file_name = fd.asksaveasfilename(filetypes=(("PNG image",
@@ -178,8 +215,7 @@ class Main(tk.Frame):
         if not file_name.endswith(".png"):
             file_name += ".png"
 
-        index = self.tree.index(self.tree.selection()[0])
-        book = self.lib.books[index]
+        book = self.get_selected_book()
 
         hash_code = hashlib.md5(str(book).encode()).hexdigest()
 
@@ -192,6 +228,10 @@ class Main(tk.Frame):
 
         mb.showinfo("Сообщение", "Сохранение прошло успешно")
 
+        if sys.platform.startswith('win'):
+            os.startfile(file_name)
+        elif sys.platform.startswith('linux'):
+            subprocess.call(["xdg-open", file_name])
 
     def load_library(self):
         if self.lib.changed:
@@ -226,6 +266,18 @@ class Main(tk.Frame):
         root.title(self.lib.file.split('\\')[-1].split('/')[-1])
         del prev_lib
         return True
+
+    def attach_file(self):
+        if not self.select_one_book_check():
+            return
+
+        book = self.get_selected_book()
+        file_name = fd.askopenfilename()
+        if not file_name:
+            return False
+        book.add_file(file_name)
+        self.lib.changed = True
+        self.view_records()
 
     def on_closing(self):
         if self.lib.changed:
@@ -370,8 +422,8 @@ if __name__ == "__main__":
     app = Main(root, lid)
     app.pack()
 
-    width = 1024
-    height = 512
+    width = 1200
+    height = 600
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
     pos_x = (screen_width - width) // 2
